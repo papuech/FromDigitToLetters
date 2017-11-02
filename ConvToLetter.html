@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Digit Donverter</title>
+
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+
+	<link rel="stylesheet" href="http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+	
+	<style>
+		body{
+			text-align: center;
+			background-color: #EAEAFF;
+		}
+	</style>
+
+	<script>
+		class Converteur {
+
+			getClean(nombre){
+				var detail = Array.from(nombre)
+				
+				//on vérifie si non nul
+				if(detail.length == 0){
+					return false
+				}
+				
+				var returnValue = ""
+				var howManyDot = 0
+				
+				// On vérifie les bons caratères
+				for (var i = 0; i<detail.length;i++) {
+					if( Number.isInteger(parseInt(detail[i])) || (detail[i] == "," || detail[i] == "." ) ) {
+						if(detail[i] == "," || detail[i] == "."){
+							//on conerti la virgule en point pour les conversion avec parseFloat
+							if (detail[i] == ",") {
+								detail[i] = "."
+							}
+							howManyDot += 1
+						}
+						returnValue += detail[i]
+					}
+
+				}
+
+				if( returnValue == ""){
+					return false
+				}
+
+				//on vérifie s'il n'y a pas trop de virgule
+				if( howManyDot > 1 ){
+					return false
+				}
+
+				//On fait l'arrondi après la virgule (2 chiffres max)
+				returnValue = Math.round(parseFloat(returnValue)*100)/100
+				
+				//On renvoie la valeur propre
+				return returnValue
+			}
+
+			analyzer(nombre){
+				// "nombre" doit représenter la partie des virgules seulement
+				//doit parc
+				nombre = this.getClean(nombre)
+
+				//si false, alors c'est que l'input ne peut être lue
+				if(nombre == false){
+					return "wtf ?"
+				}
+
+				var detail = Array.from(nombre.toString())
+
+				//Remplir ces variables en fonction du tableau
+				var euros = ""
+				var centimes = ""
+				var isPoint = false
+
+				for (var i = 0; i<detail.length;i++) {
+					if(detail[i] == "."){
+						isPoint = true
+					}
+					else{
+						if(isPoint == false){
+							euros += detail[i]
+						}
+						else{
+							centimes += detail[i]
+						}
+					}
+				}
+
+				if(Array.from(centimes).length == 1){
+					centimes += "0"
+				}
+
+				euros = this.builder(euros)
+				var devise = "euros"
+				centimes = this.builder(centimes)
+				var cent = "centimes"
+
+				var final = ""
+
+				if (euros == "un"){
+					devise = "euro"
+				}
+				if(centimes == "un"){
+					cent = "centime"
+				}
+
+				if(centimes == ""){
+					final = euros+" "+devise
+				}
+				else if (euros == "") {
+					final = centimes +" "+cent
+				}
+				else{
+					final = euros+" "+devise+" "+centimes +" "+cent
+				}
+
+
+
+				return final
+			}
+	
+			builder(nombre){
+				var grandeur = nombre.toString().length //initNum.length()
+				if(grandeur == 0){
+					return false
+				}
+				else if (grandeur == 1) {
+					return this.getChiffre(nombre)
+				}
+				else if (grandeur == 2) {
+					return this.buildDizaine(nombre)
+				}
+				else if (grandeur == 3) {
+					return this.buildCentaine(nombre)
+				}
+				else if ((grandeur > 3) && (grandeur < 7)) {
+					return this.buildMillier(nombre)
+				}
+				else if ((grandeur > 6) && (grandeur < 10)) {
+					// 100 000 000
+					return this.buildMillion(nombre)
+				}
+				else if ((grandeur > 9) && (grandeur < 13)) {
+					return this.buildMilliard(nombre)
+				}
+				else{
+					return "wtf ?"
+				}
+			}
+
+			buildDizaine(nombre){
+				var final = ""
+				var detail = Array.from(nombre)
+				//on défini la base
+				var base = this.getDizaine(detail[0])
+				// on ajoute l'unité
+					
+				// cas de CS (chiffre spécial)
+				if(detail[0] == 0){
+					final = this.getChiffre(detail[1])
+				}
+				else if(detail[0] == 7 || detail[0] == 9){
+
+					//Attention, si suivant nul on ne prend que la base
+					if(detail[1] == 0){
+						final = base + "-dix"
+					}
+					//Si suivant = 1 alors on met un "-et-un"
+					else if (detail[1] == 1 ) {
+						var unite = this.getCS(detail[1])
+						final = base+"-et-"+unite
+						//exception du 91 qui n'a pas le "-et-un"
+						if(detail[0] == 9){
+							final = base+"-"+unite
+						}
+					}
+					else{
+						var unite = this.getCS(detail[1])
+						final = base+"-"+unite
+					}	
+				}
+				// cas de CS mais pour la dizaine 10
+				else if (detail[0] == 1) { 
+					//on garde juste le cs
+					final = this.getCS(detail[1])
+				}
+				// cas "normal"
+				else {
+
+					//Attention, si suivant nul on ne prend que la base
+					if(detail[1] == 0){
+
+						//règle de 80 qui s'écrit avec un "s" si suivit de rien
+						if(detail[0] == 8){
+							final = base+"s"
+						}
+						else {
+							final = base
+						}
+					}
+					//Si suivant = 1 alors on met un "-et-un"
+					else if (detail[1] == 1 ) {
+						var unite = this.getChiffre(detail[1])
+						final = base+"-et-"+unite
+						//exception du 81 qui n'a pas le "-et-un"
+						if(detail[0] == 8){
+							final = base+"-"+unite
+						}
+					}
+					else{
+						var unite = this.getChiffre(detail[1])
+						final = base + "-" + unite
+					}
+				}
+				 
+				return final
+			}
+
+			buildCentaine(nombre){
+				var final = ""
+				var detail = Array.from(nombre)
+
+				var cent = "cent"
+
+				//etape 1
+				// on compte le nombre de centaine 
+
+				//si nombre de centaines nulles
+				if(detail[0] == 0){
+					//on chope les deux derniers chiffres et ça part pour buildDizaine()
+					var newNombre = detail[1]+detail[2]
+					final = this.buildDizaine(newNombre) 
+				}
+				//Si une seule centaine
+				else if (detail[0] == 1) {
+				 	var newNombre = detail[1]+detail[2]
+					final = cent + " " + this.buildDizaine(newNombre)
+				 } 
+				 //Si plusieurs centaines
+				 else{
+
+				 	if(detail[1] == 0 && detail[2] == 0){
+				 		cent += "s"
+				 	}
+
+					var nbCent = this.getChiffre(detail[0])
+					final = nbCent + " " + cent + " "
+					var newNombre = detail[1]+detail[2]
+					final += this.buildDizaine(newNombre)
+				}
+
+
+				return final
+			}
+
+			buildMillier(nombre){
+				//Initialisation
+				var final = ""
+				var detail = Array.from(nombre)
+				var mille = "mille"
+
+				// deatil est un tableau de 4 à 6 chiffres
+				var taille = detail.length
+				//on crée un string pour les centaines issu de "nombre"
+				var features = detail[taille-3]+detail[taille-2]+detail[taille-1]
+				var nombreFeatures = this.buildCentaine(features)
+				//nombreFeatures ok ...
+
+
+				//construction du tableau des milliers de façon dynamique
+				if(taille == 4){
+					//si 4 chiffre, on met le nombre de milier plus les centaines
+					var millier = detail[0]
+					if(detail[0] == 0){
+						final = nombreFeatures
+					}
+					else if(detail[0] == 1){
+						final = mille+ " " +nombreFeatures 
+					}
+					else{
+						final = this.getChiffre(millier)+ " " +mille+ " " +nombreFeatures
+					}
+					
+				}
+				else if (taille == 5) {
+					//si 5 chiffres, on met les dizaines de milliers + les centaines
+					if(detail[0] == 0){
+						final = this.buildMillier(detail[taille-4]+detail[taille-3]+detail[taille-2]+detail[taille-1])
+					}
+					else{
+						var millier = detail[0]+detail[1]
+						final = this.buildDizaine(millier)+ " " +mille+ " " +nombreFeatures
+					}
+					
+				}
+				else if (taille == 6) {
+					if(detail[0] == 0){
+						final = this.buildMillier(detail[taille-5]+detail[taille-4]+detail[taille-3]+detail[taille-2]+detail[taille-1])
+					}
+					else{
+						var millier = detail[0]+detail[1]+detail[2]
+						final = this.buildCentaine(millier)+ " " +mille+ " " +nombreFeatures
+					}
+					
+				}
+				else{
+					console.log('erreur taille tableau')
+				}
+			
+				
+
+				
+
+				return final
+			}
+
+			buildMillion(nombre){
+				//Initialisation
+				var final = ""
+				var detail = Array.from(nombre)
+				var million = "millions"
+
+				// deatil est un tableau de 4 à 6 chiffres
+				var taille = detail.length
+
+				//on compte les milliers
+				var millier = detail[taille-6]+detail[taille-5]+detail[taille-4]+detail[taille-3]+detail[taille-2]+detail[taille-1]
+				var nombreMillier = this.buildMillier(millier)
+
+
+				//construction du tableau des milliers de façon dynamique
+				if(taille == 7){
+					//si 4 chiffre, on met le nombre de milier plus les centaines
+					var nbmillion = detail[0]
+					if(detail[0] == 0){
+						final = nombreMillier
+					}
+					else{
+						if (detail[0] == 1){
+							million = "million"
+						}
+						final = this.getChiffre(nbmillion)+ " " +million+ " " +nombreMillier
+					}
+					
+				}
+				else if (taille == 8) {
+					//si 5 chiffres, on met les dizaines de milliers + les centaines
+					if(detail[0] == 0){
+						final = this.buildMillion(detail[taille-7]+detail[taille-6]+detail[taille-5]+detail[taille-4]+detail[taille-3]+detail[taille-2]+detail[taille-1])
+					}
+					else{
+						var nbmillion = detail[0]+detail[1]
+						final = this.buildDizaine(nbmillion)+ " " +million+ " " +nombreMillier
+					}
+					
+				}
+				else if (taille == 9) {
+					if(detail[0] == 0){
+						final = this.buildMillion(detail[taille-8]+detail[taille-7]+detail[taille-6]+detail[taille-5]+detail[taille-4]+detail[taille-3]+detail[taille-2]+detail[taille-1])
+					}
+					else{
+						var nbmillion = detail[0]+detail[1]+detail[2]
+						final = this.buildCentaine(nbmillion)+ " " +million+ " " +nombreMillier
+					}
+					
+				}
+				else{
+					console.log('erreur taille tableau')
+				}
+			
+				
+
+				
+
+				return final
+			}
+
+			buildMilliard(nombre){
+				//Initialisation
+				var final = ""
+				var detail = Array.from(nombre)
+				var milliard = "milliards"
+
+				// deatil est un tableau de 4 à 6 chiffres
+				var taille = detail.length
+
+				//on compte les milliers
+				var millions = detail[taille-9]+detail[taille-8]+detail[taille-7]+detail[taille-6]+detail[taille-5]+detail[taille-4]+detail[taille-3]+detail[taille-2]+detail[taille-1]
+				var nombreMillion = this.buildMillion(millions)
+
+
+				//construction du tableau des milliards de façon dynamique
+				if(taille == 10){
+					var nbmilliard = detail[0]
+					if(detail[0] == 0){
+						final = nombreMillion
+					}
+					else{
+						if (detail[0] == 1){
+							milliard = "milliard"
+						}
+						final = this.getChiffre(nbmilliard)+ " " +milliard+ " " +nombreMillion
+					}
+					
+				}
+				else if (taille == 11) {
+					if(detail[0] == 0){
+						final = this.buildMilliard(detail[taille-10]+detail[taille-9]+detail[taille-8]+detail[taille-7]+detail[taille-6]+detail[taille-5]+detail[taille-4]+detail[taille-3]+detail[taille-2]+detail[taille-1])
+					}
+					else{
+						var nbmilliard = detail[0]+detail[1]
+						final = this.buildDizaine(nbmilliard)+ " " +milliard+ " " +nombreMillion
+					}
+					
+				}
+				else if (taille == 12) {
+					if(detail[0] == 0){
+						final = this.buildMilliard(detail[taille-11]+detail[taille-10]+detail[taille-9]+detail[taille-8]+detail[taille-7]+detail[taille-6]+detail[taille-5]+detail[taille-4]+detail[taille-3]+detail[taille-2]+detail[taille-1])
+					}
+					else{
+						var nbmilliard = detail[0]+detail[1]+detail[2]
+						final = this.buildCentaine(nbmilliard)+ " " +milliard+ " " +nombreMillion
+					}
+					
+				}
+				else{
+					console.log('erreur taille tableau')
+				}
+			
+				
+
+				
+
+				return final
+			}
+
+			getChiffre(chiffre){
+
+				chiffre = parseInt(chiffre)
+				var text = ""
+				switch (chiffre) {
+					case 1:
+						text = "un"
+						break;
+					case 2:
+						text = "deux"
+						break;
+					case 3:
+						text = "trois"
+						break;
+					case 4:
+						text = "quatre"
+						break;
+					case 5:
+						text = "cinq"
+						break;
+					case 6:
+						text = "six"
+						break;
+					case 7:
+						text = "sept"
+						break;
+					case 8:
+						text = "huit"
+						break;
+					case 9:
+						text = "neuf"
+						break;
+					case 0:
+						text = ""
+						break;
+					default:
+						text = "error"
+						break;
+				}
+
+				return text
+			}
+
+			getCS(chiffre){
+
+				chiffre = parseInt(chiffre)
+				var text = ""
+				switch (chiffre) {
+					case 1:
+						text = "onze"
+						break;
+					case 2:
+						text = "douze"
+						break;
+					case 3:
+						text = "treize"
+						break;
+					case 4:
+						text = "quatorze"
+						break;
+					case 5:
+						text = "quinze"
+						break;
+					case 6:
+						text = "seize"
+						break;
+					case 7:
+						text = "dix-sept"
+						break;
+					case 8:
+						text = "dix-huit"
+						break;
+					case 9:
+						text = "dix-neuf"
+						break;
+					case 0:
+						text = "dix"
+						break;
+					default:
+						text = "error"
+						break;
+				}
+
+				return text
+			}
+
+			getDizaine(chiffre){
+				var base = ""
+				chiffre = parseInt(chiffre)
+				switch (chiffre) {
+					case 1:
+						base = "dix"
+						break;
+					case 2:
+						base = "vingt"
+						break;
+					case 3:
+						base = "trente"
+						break;
+					case 4:
+						base = "quarante"
+						break;
+					case 5:
+						base = "cinquante"
+						break;
+					case 6:
+						base = "soixante"
+						break;
+					case 7:
+						base = "soixante"
+						break;
+					case 8:
+						base = "quatre-vingt"
+						break;
+					case 9:
+						base = "quatre-vingt"
+						break;
+					case 0:
+						base = "dix"
+						break;
+					default:
+						base = "error"
+						break;
+				}
+
+				return base; 
+			}
+		}
+	var Convertisseur = new Converteur();
+	</script>
+
+</head>
+<body>
+
+	
+
+	<div class="container-fluid" style="margin-top: 100px;">
+		<div class="row justify-content-md-center">
+			<div class="col">
+				<div class="input-group">
+					 <span class="input-group-addon" id="basic-addon1">€</span>
+					  <input type="text" id="valueHolder" class="form-control" placeholder="Nombre" aria-describedby="basic-addon1">
+				</div>
+			</div>
+			<div class="col-1">
+				<i class="ion-arrow-right-a" style="height: 50px;"></i>
+			</div>
+			<div class="col">
+				<div class="input-group">
+					 <span class="input-group-addon" id="basic-addon1">[a-z]</span>
+					  <input type="text" id="resultat" class="form-control" placeholder="Nombre" aria-describedby="basic-addon1">
+				</div>				
+			</div>
+		</div>
+		<div class="row justify-content-md-center" style="margin-top: 50px;">
+			<div class="col-8">
+				<button class="btn btn-success btn-lg" type="button" onclick="convert()">Convertir</button>
+			</div>
+		</div>
+	</div>
+			
+
+
+
+
+
+	<!-- BOOTSTRAP -->
+	<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+	
+	<!-- CONVERTER -->
+	
+	<script>
+		function convert(){
+		resultat_final = Convertisseur.analyzer(document.getElementById('valueHolder').value)
+		document.getElementById('resultat').value = resultat_final
+		}
+		// conevert(5763);
+	</script>
+</body>
+</html>
+
+
